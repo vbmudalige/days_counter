@@ -1,6 +1,5 @@
 package com.lorica.utils;
 
-import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,35 +9,29 @@ import org.slf4j.LoggerFactory;
 public class DaysCounter {
 
     private static final Logger logger = LoggerFactory.getLogger(DaysCounter.class);
-
-    private final static String FIRST_INPUT_DATE = "firstInputDate";
-    private final static String SECOND_INPUT_DATE = "secondInputDate";
-    private final static String BASE_DATE = "01/01/1901";
+    private static final String BASE_DATE = "01/01/1901";
 
     public static void main(String[] args) {
-        Options options = new Options();
-        options.addOption(FIRST_INPUT_DATE, true, "First input date for the full days count calculation").
-                addOption(SECOND_INPUT_DATE, true, "Second input date for the full days count calculation");
 
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = null;
-        try {
-            cmd = parser.parse(options, args);
-        } catch (ParseException e) {
-            logger.error("Cannot parse the inputs", e);
-        }
-        if (!cmd.hasOption(FIRST_INPUT_DATE) || !cmd.hasOption(SECOND_INPUT_DATE)) {
-            logger.error("Please provide two dates");
-            return;
-        }
-        final String firstInputDate = cmd.getOptionValue(FIRST_INPUT_DATE);
-        final String secondInputDate = cmd.getOptionValue(SECOND_INPUT_DATE);
+        InputProvider inputProvider = new CommandLineInputProvider(args);
+
+        final String firstInputDate = inputProvider.getFirstInputDate();
+        final String secondInputDate = inputProvider.getSecondInputDate();
 
         logger.info("First input date is {} and second input date is {}", firstInputDate, secondInputDate);
 
         CustomDate dateOne = new CustomDate(firstInputDate.trim(), "/");
         CustomDate dateTwo = new CustomDate(secondInputDate.trim(), "/");
 
+        long noOfFullDays = getNumberOfFullDays(dateOne, dateTwo);
+
+        logger.info("The number of full days between {} and {} are {}", firstInputDate, secondInputDate, noOfFullDays);
+    }
+
+    /*
+    Calculate the value of |(dateOne - baseDate) - (dateTwo - baseDate)| + |leapDays(dateOne - baseDate) - leapDays(dateTwo - baseDate)| - 1
+     */
+    private static long getNumberOfFullDays(CustomDate dateOne, CustomDate dateTwo) {
         DateCalculator dateCalculator = new DateCalculator(new CustomDate(BASE_DATE, "/"));
 
         long noOfLeapDaysForTheDateOneFromTheBaseDate = dateCalculator.getNumberOfLeapDaysFromBaseDate(dateOne);
@@ -46,9 +39,7 @@ public class DaysCounter {
         long noOfDaysForTheDateOneFromTheBaseDate = dateCalculator.getNumberOfDaysFromTheBaseDate(dateOne);
         long noOfDaysForTheDateTwoFromTheBaseDate = dateCalculator.getNumberOfDaysFromTheBaseDate(dateTwo);
 
-        long noOfFullDays = Math.abs(noOfLeapDaysForTheDateOneFromTheBaseDate - noOfLeapDaysForTheDateTwoFromTheBaseDate)
+        return Math.abs(noOfLeapDaysForTheDateOneFromTheBaseDate - noOfLeapDaysForTheDateTwoFromTheBaseDate)
                 + Math.abs(noOfDaysForTheDateOneFromTheBaseDate - noOfDaysForTheDateTwoFromTheBaseDate) - 1;
-
-        logger.info("The number of full days between {} and {} are {}", firstInputDate, secondInputDate, noOfFullDays);
     }
 }
